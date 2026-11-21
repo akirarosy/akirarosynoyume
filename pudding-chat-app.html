@@ -2051,7 +2051,7 @@ function syncHealth(loud){
   var sy=cfg.sync||{};if(!sy.url||!sy.token)return Promise.resolve(false);
   if(syncBusy)return syncBusy;if(!loud&&Date.now()-syncLast<60000)return Promise.resolve(false);
   syncLast=Date.now();
-  syncBusy=fetch(sy.url+'/health',{headers:{'x-token':sy.token},cache:'no-store'}).then(function(r){return r.json().then(function(j){return{st:r.status,j:j}})}).then(function(x){
+  syncBusy=fetch(sy.url+'/health?token='+encodeURIComponent(sy.token)+'&_='+Date.now()).then(function(r){return r.json().then(function(j){return{st:r.status,j:j}})}).then(function(x){
     syncBusy=null;
     if(x.st===401){if(loud)toast('小后端：暗号不对',2400);return false}
     if(!x.j||!x.j.ok){if(loud)toast('小后端出错了',2000);return false}
@@ -2062,7 +2062,7 @@ function syncHealth(loud){
       if(takeHealth(hh.text,hh.t,!loud)){if(!loud)toast('🦉 同步了身体数据',1600)}
     }else if(loud)toast('小后端连上了'+(hh?'':'（还没有数据）'),1800);
     return true
-  }).catch(function(){syncBusy=null;if(loud)toast('连不上小后端',2000);return false});
+  }).catch(function(e){syncBusy=null;mem.syncErr=String(e&&e.message||e);saveMem();if(loud)toast('连不上小后端：'+mem.syncErr.slice(0,40),3000);return false});
   return syncBusy}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)syncHealth()});
 setTimeout(function(){syncHealth()},800);
