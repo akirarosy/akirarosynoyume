@@ -557,6 +557,8 @@ body[data-v="book"]::after{opacity:1}
 <small style="display:block;margin:-4px 0 10px;color:var(--mute)">特效来自 Corvus Weather FX（CC BY-NC-SA 4.0），只在 Home 页、页面开着时才动</small>
 <label class="chk"><input type="checkbox" id="f-note"> 让小猫头鹰在主页写便签（用 Haiku，每个时段最多一次，一次不到 0.1 美分）</label>
 <div class="row2"><button class="ghost" id="exp">导出备份</button><button class="ghost" id="imp">导入备份</button><input id="file" type="file" accept="application/json" hidden></div>
+<label>电脑版排版<select id="f-lay" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:10px 12px;color:var(--ink)"><option value="auto">自动（窗口够宽、用鼠标时）</option><option value="on">一直用电脑版</option><option value="off">一直用手机版</option></select></label>
+<small style="display:block;margin:-4px 0 10px;color:var(--mute)">只对这台设备有效，改了会自动刷新一下</small>
 <p class="hint" id="verTag" style="text-align:center;opacity:.6;margin:6px 0 0"></p>
 <div class="row2"><button class="ghost danger" id="wipe">清空全部</button><button class="ghost" id="close">取消</button><button class="send" id="ok">保存</button></div>
 </div></div>
@@ -1849,7 +1851,7 @@ async function once(model,system,messages,max){
   if(!res.ok)throw new Error(await fail(res));
   var j=await res.json(),u=j.usage||{};addCost(model,u.input_tokens||0,u.cache_read_input_tokens||0,u.cache_creation_input_tokens||0,u.output_tokens||0,0);return j.content.map(function(c){return c.text||''}).join('')}
 async function stream(model,system,messages,onText,opt){opt=opt||{};
-  var wc=withCache(system,messages),res=await fetch(URL_,{method:'POST',headers:hdr(),body:JSON.stringify(Object.assign({model:model,max_tokens:opt.max||4096,system:wc.sys,messages:wc.ms,stream:true},opt.web?{tools:[Object.assign({type:'web_search_20250305',name:'web_search',max_uses:3},opt.domain?{allowed_domains:[opt.domain]}:{})]}:{}))});
+  var wc=withCache(system,messages),res=await fetch(URL_,{method:'POST',headers:hdr(),body:JSON.stringify(Object.assign({model:model,max_tokens:opt.max||4096,system:wc.sys,messages:wc.ms,stream:true},opt.web?{tools:[Object.assign({type:'web_search_20250305',name:'web_search',max_uses:opt.uses||3},opt.domain?{allowed_domains:[opt.domain]}:{})]}:{}))});
   if(!res.ok)throw new Error(await fail(res));
   var rd=res.body.getReader(),dec=new TextDecoder(),buf='',out='',tokens=0,cached=0,srcs=[],cites=[],searches=0,inTok=0,cw=0,outTok=0;
   function addSrc(arr,u,t){if(u&&/^https?:/.test(u)&&!arr.some(function(x){return x.u===u}))arr.push({u:u,t:(t||u).slice(0,60)})}
@@ -1985,7 +1987,9 @@ async function send(t,thought){
   c.msgs.push(um);renderList();
   var tb=Date.now();
   try{
-    var r=await stream(MODELS[cfg.model],system(),apiMsgs(c,imgs),function(out){if(!got){got=true;islShow('正在回复…')}w.innerHTML=fmt(stripMarks(out));msgs.scrollTop=msgs.scrollHeight},{web:!!cfg.web,onSearch:function(){islShow('正在搜索…')}});
+    var hk=(window.Rosy&&Rosy.hooks)||{},hx={};try{hx=(hk.before&&hk.before(t,c))||{}}catch(e){console.log('[hooks]',e)}
+    var r=await stream(MODELS[cfg.model],system()+(hx.sys?'\n\n'+hx.sys:''),apiMsgs(c,imgs),function(out){if(!got){got=true;islShow(hx.busy||'正在回复…')}var o=out;try{if(hk.strip)o=hk.strip(o)}catch(e){}w.innerHTML=fmt(stripMarks(o));msgs.scrollTop=msgs.scrollHeight},{web:!!cfg.web||!!hx.web,uses:hx.uses,max:hx.max,onSearch:function(){islShow(hx.searching||'正在搜索…')}});
+    try{if(hk.reply)r.text=hk.reply(r.text,c)||r.text}catch(e){console.log('[hooks]',e)}
     var rt0=r.text;r.text=applyMarks(takeDrawer(r.text));if(r.text!==rt0){if(!r.text)r.text='嗯。';w.innerHTML=fmt(r.text)}
     if(/心声/.test(r.text)){var ct=cleanThought(r.text);if(ct!==r.text){console.log('[心声] 清掉了回复里模仿的心声格式');r.text=ct||r.text;w.innerHTML=fmt(r.text)}}
     var am={role:'assistant',content:r.text,ts:tb};if(r.srcs.length){am.srcs=r.srcs;w.innerHTML=fmt(r.text)+srcHtml(r.srcs)}c.msgs.push(am);c.narKey=nk.key;saveAll();toast('回复好了',1500);
@@ -3168,7 +3172,7 @@ function pollEvent(w){
     out.forEach(fbPush)}).catch(function(){})}
 function near(ev){if(!ev)return false;if(ev.state==='in')return true;var t=new Date(ev.date)-Date.now();return t<6e5&&t>-9e6}
 function fbTick(force){
-  if(document.hidden&&!force)return;
+  if(document.hidden&&!force&&!window.__rosyKeep)return; // 电脑版小窗开着时，切到游戏里也继续更新比分
   rivalCheck();
   var jobs=FB_TEAMS.map(function(T){return teamData(T).then(function(d){[d.live,d.next,d.past[0]].forEach(function(ev){if(ev&&near(ev))watchEvent(ev,{team:T})})}).catch(function(){})});
   var byTeam={};
@@ -3285,7 +3289,23 @@ function renderLiveChip(){
   var e=all[0],t='正在看：'+fbScoreLine(e)+' · '+(e.state==='in'?(e.clock||'LIVE'):'终场')+(all.length>1?'  等 '+all.length+' 场':'');
   el.innerHTML='<i class="dot"></i><span>'+esc(t)+'</span>';el.title='猫头鹰能看到这些比赛的实时比分';el.hidden=false}
 $('liveChip').onclick=function(){go('foot')};
-setInterval(function(){if(!document.hidden&&(liveWatched().length||uclLive||uclNow.length))uclRefresh().then(renderLiveChip);else renderLiveChip()},30000);
+setInterval(function(){if((!document.hidden||window.__rosyKeep)&&(liveWatched().length||uclLive||uclNow.length))uclRefresh().then(renderLiveChip);else renderLiveChip()},30000);
+/* 给电脑版 desktop.js 用的小接口 */
+window.Rosy={
+  go:function(v){go(v)},toast:function(t,ms){toast(t,ms)},
+  addImages:async function(fs){for(var i=0;i<fs.length;i++){if(pending.length>=4){toast('最多 4 张');break}try{pending.push(await shrink(fs[i]))}catch(e){toast('这张图读不了')}}renderThumbs()},
+  importBook:function(f){bkImport(f)},
+  live:function(){var ws=liveWatched(),ids={},out=[];ws.forEach(function(w){ids[w.ev.id]=1;out.push(w.ev)});uclNow.forEach(function(e){if(!ids[e.id])out.push(e)});
+    return out.map(function(e){return{id:e.id,home:zh(e.home.t.displayName),away:zh(e.away.t.displayName),hs:e.home.s,as:e.away.s,clock:e.clock||'',state:e.state,lg:lgName(e)}})},
+  upcoming:function(){var list=[],seen={},now=Date.now(),tmo=function(p){return Promise.race([p.catch(function(){return null}),new Promise(function(r){setTimeout(function(){r(null)},6000)})])};
+    var add=function(n){if(n&&!seen[n.id]&&n.state==='pre'&&new Date(n.date)-now<12*36e5&&new Date(n.date)>now-36e5){seen[n.id]=1;list.push({id:n.id,home:zh(n.home.t.displayName),away:zh(n.away.t.displayName),t:+new Date(n.date),lg:lgName(n)})}};
+    return Promise.all(FB_TEAMS.map(function(T){return tmo(teamData(T)).then(function(d){if(d)add(d.next)})}).concat(FB_PLAYERS.map(function(P){return tmo(playerData(P)).then(function(d){if(d)add(d.next)})}))).then(function(){return list.sort(function(a,b){return a.t-b.t})})},
+  keep:function(on){window.__rosyKeep=!!on;if(on)fbTick(true)},
+  hooks:{},
+  conv:function(){return cur?cur.id:null},
+  mem:function(){return mem},save:function(){saveMem()},
+  send:function(x){send(x)}
+};
 
 /* 小后端同步 */
 var syncBusy=null,syncLast=0;
@@ -3666,8 +3686,9 @@ $('pack').onclick=async function(){
   toast(ok?'整理好了':'这次没整理成功',2000)};
 
 /* 设置 */
-var APP_VER='11/22·j';
-function openSheet(){try{$('verTag').textContent='版本 '+APP_VER+' · '+(window.__vp||('网页 '+innerHeight+' · 屏幕 '+screen.height))}catch(e){}$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
+var APP_VER='11/22·m';
+(function(){try{var L='auto';try{L=localStorage.getItem('pc_layout')||'auto'}catch(e){}if(L==='on'||(L==='auto'&&matchMedia('(min-width:700px) and (pointer:fine)').matches)){var sc=document.createElement('script');sc.src='desktop.js?v='+encodeURIComponent(APP_VER);sc.defer=true;document.head.appendChild(sc)}}catch(e){}})();
+function openSheet(){try{var fl=$('f-lay');fl.value=(function(){try{return localStorage.getItem('pc_layout')||'auto'}catch(e){return 'auto'}})();fl.onchange=function(){try{localStorage.setItem('pc_layout',fl.value)}catch(e){}location.reload()}}catch(e){}try{$('verTag').textContent='版本 '+APP_VER+' · '+(window.__vp||('网页 '+innerHeight+' · 屏幕 '+screen.height))}catch(e){}$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
 async function closeSheet(){var p=document.querySelector('#sheet .panel');await CaramelPudding.out(p);$('sheet').hidden=true;p.classList.remove('cp-out')}
 $('gear').onclick=openSheet;$('close').onclick=closeSheet;
 function openMem(){side(false);$('f-memory').value=cfg.memory||'';$('f-main').value=mem.main||'';$('f-diary').value=mem.diary||'';renderCards();$('msheet').hidden=false;$('msheet').querySelector('.panel').scrollTop=0}
