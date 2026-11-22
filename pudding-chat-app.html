@@ -72,6 +72,9 @@ header b{font:400 36px/1.2 "Pinyon Script","Cormorant Garamond",Georgia,serif;te
 body[data-v="chat"]{--rb1:rgba(255,255,255,.1);--rb2:rgba(255,255,255,0);--mb1:rgba(255,226,170,.2);--mb2:rgba(255,205,150,.03);--g1:rgba(255,250,234,.22);--g2:rgba(255,250,234,.08)}
 body[data-v="chat"] .row{-webkit-backdrop-filter:blur(1.5px) saturate(150%);backdrop-filter:blur(1.5px) saturate(150%);text-shadow:0 0 6px rgba(255,255,255,.85)}
 body[data-v="chat"] .compose::before,body[data-v="chat"] .tabs::before,body[data-v="chat"] header .glass::before{-webkit-backdrop-filter:blur(1.5px) saturate(140%);backdrop-filter:blur(1.5px) saturate(140%)}
+/* 输入框下面会有消息滚过去，这里保留厚一点的磨砂，免得字透出来显得乱 */
+body[data-v="chat"] .compose{--g1:rgba(255,250,234,.62);--g2:rgba(255,250,234,.42)}body[data-v="chat"] .compose::before{-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%)}
+@media (prefers-color-scheme:dark){body[data-v="chat"] .compose{--g1:rgba(43,29,12,.66);--g2:rgba(43,29,12,.46)}}
 @media (prefers-color-scheme:dark){body[data-v="chat"]{--rb1:rgba(58,40,24,.18);--rb2:rgba(40,27,15,.05);--mb1:rgba(120,78,34,.28);--mb2:rgba(92,60,26,.08);--g1:rgba(43,29,12,.24);--g2:rgba(43,29,12,.08)}body[data-v="chat"] .row{text-shadow:0 0 6px rgba(0,0,0,.7)}}
 .row.me{background:linear-gradient(135deg,var(--mb1),var(--mb2));font-family:"Noto Serif SC","Songti SC",Georgia,serif}
 .row.err{color:#c0392b;box-shadow:0 0 0 1px #c0392b,0 6px 18px var(--gs)}
@@ -126,6 +129,13 @@ body[data-v="chat"] .compose::before,body[data-v="chat"] .tabs::before,body[data
 .ldg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 18px}.ldg span{background:var(--bg);border-radius:12px;padding:8px 12px}.ldg small{display:block;font-size:11.5px;color:var(--mute)}.ldg b{font-size:15px}
 .ldl{margin:10px 18px 0;font-size:13.5px;color:var(--mute)}.ldn{margin:12px 18px 0;padding:10px 12px;border-radius:12px;border:1px dashed var(--line)}.ldn small{display:block;color:var(--mute);font-size:12px}.ldn b{display:block;margin:2px 0}.ldn p{margin:4px 0;font-size:13px;color:var(--mute);line-height:1.55}.ldn a{font-size:13px;color:var(--caramel)}
 .ldp .lb{margin:12px 18px 0;display:flex}.ldp .lb a{flex:1;text-align:center;text-decoration:none;padding:9px;font-size:13.5px}
+.bpop{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(40,22,5,.3);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}.bpop[hidden]{display:none}
+.bcard{width:100%;max-width:380px;max-height:84dvh;overflow:auto;border-radius:28px;padding:20px 20px 16px;background:linear-gradient(180deg,var(--panel),var(--bg));border:1px solid var(--line);box-shadow:0 20px 60px rgba(40,20,5,.3);color:var(--ink);animation:bin .34s cubic-bezier(.2,.8,.2,1)}
+@keyframes bin{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.bcard .bh{display:flex;align-items:center;gap:12px;margin-bottom:10px}.bcard .ow{width:46px;height:46px;border-radius:50%;background:#cfe9df;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.bcard .bh b{display:block;font:600 19px/1.3 "Noto Serif SC","Songti SC",Georgia,serif}.bcard .bh small{color:var(--mute);font-size:12.5px}
+.bcard .bi{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}.bcard .be{font-size:20px;width:26px;text-align:center;flex:none}.bcard .bi b{display:block;font-weight:600;font-size:14.5px;line-height:1.45}.bcard .bi small{display:block;color:var(--mute);font-size:12.5px;margin-top:1px;line-height:1.45}
+.bcard .bok{margin-top:12px;width:100%;padding:11px;border-radius:16px;border:0;background:var(--caramel);color:var(--on);font:600 15px "Noto Sans SC","PingFang SC",sans-serif;cursor:pointer}
 .thumbs{display:flex;gap:10px;overflow-x:auto;padding:6px 4px 2px}.thumbs:empty{display:none}
 .th{position:relative;flex:none}.th img{display:block;width:56px;height:56px;object-fit:cover;border-radius:12px}
 .th button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;padding:0;border-radius:50%;background:var(--ink);color:var(--bg);font-size:11px;line-height:20px}
@@ -543,6 +553,7 @@ body[data-v="book"]::after{opacity:1}
 <small style="display:block;margin:-4px 0 10px;color:var(--mute)">特效来自 Corvus Weather FX（CC BY-NC-SA 4.0），只在 Home 页、页面开着时才动</small>
 <label class="chk"><input type="checkbox" id="f-note"> 让小猫头鹰在主页写便签（用 Haiku，每个时段最多一次，一次不到 0.1 美分）</label>
 <div class="row2"><button class="ghost" id="exp">导出备份</button><button class="ghost" id="imp">导入备份</button><input id="file" type="file" accept="application/json" hidden></div>
+<p class="hint" id="verTag" style="text-align:center;opacity:.6;margin:6px 0 0"></p>
 <div class="row2"><button class="ghost danger" id="wipe">清空全部</button><button class="ghost" id="close">取消</button><button class="send" id="ok">保存</button></div>
 </div></div>
 <div class="sheet" id="lsheet" hidden><div class="panel cp-pop letp">
@@ -551,6 +562,7 @@ body[data-v="book"]::after{opacity:1}
 </div></div>
 <div class="libsheet" id="libsheet" hidden><div class="lhd"><div class="ltabs" id="libTabs"></div><button class="ic" id="libX" aria-label="关闭">✕</button></div><div class="ltools" id="libTools"></div><div class="lbody" id="libBody"></div><div class="libdet" id="libDet" hidden></div></div>
 <div class="sheet" id="dsheet" hidden><div class="panel cp-pop"><h2>🗃️ 抽屉</h2><p class="hint" style="margin-top:-6px">小猫头鹰悄悄放进来的东西都在这里，不催你，慢慢看。</p><div id="dlist"></div><div class="row2"><button class="send" id="dclose">回去</button></div></div></div>
+<div class="bpop" id="brief" hidden><div class="bcard" id="briefCard"></div></div>
 <div class="sheet" id="tsheet" hidden><div class="panel cp-pop">
 <h2>💭 心声</h2>
 <p class="hint" style="margin-top:-6px">心里想的只有猫头鹰能感觉到，气泡上只显示说出口的话，点 🐾 才会展开。</p>
@@ -597,7 +609,8 @@ SOFTWARE.
 /* iPhone 桌面 App：有的系统版本把可视区域算短了一截（少了顶部状态栏那么高），底下会空出一条。按屏幕真实高度把界面拉满 */
 (function(){var st=(navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);if(!st)return;
   function fit(){var b=document.body;if(!b)return;b.style.height='';b.style.bottom='';var por=innerHeight>=innerWidth,sh=por?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width),gap=sh-innerHeight;
-    if(gap>8&&gap<140){b.style.bottom='auto';b.style.height=sh+'px';document.documentElement.style.height=sh+'px'}else document.documentElement.style.height=''}
+    if(gap<140){b.style.bottom='auto';b.style.height=sh+'px';document.documentElement.style.height=sh+'px'}else document.documentElement.style.height='';
+    window.__vp='桌面App · 屏幕 '+sh+' · 网页 '+innerHeight+' · 界面 '+Math.round(b.getBoundingClientRect().height)}
   addEventListener('resize',function(){setTimeout(fit,60)});addEventListener('orientationchange',function(){setTimeout(fit,300)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fit);else fit();setTimeout(fit,500)})();
 </script>
@@ -1931,25 +1944,28 @@ $('list').addEventListener('click',function(e){
 async function send(t,thought){
   if(busy)return;thought=(thought||'').trim();t=(thought?(t||''):(t||inp.value)).trim();if(!t&&!pending.length&&!thought)return;
   if(!pending.length&&!thought&&takeHealth(t)){inp.value='';inp.style.height='auto';return}
-  try{await Promise.race([syncHealth(),new Promise(function(r){setTimeout(r,2500)})])}catch(e){}
-  if(/(大姨妈|姨妈|例假|月经)[^，。！？\n]{0,4}(来了|来啦|来咯|到了)/.test(t))periodSeen(ymd(new Date()));
   if(!cfg.key){openSheet();return}
+  busy=true;$('send').disabled=true;inp.value='';inp.style.height='auto'; // 先锁住，防止等数据的那几秒里又点了一次发出两条
+  if(/(大姨妈|姨妈|例假|月经)[^，。！？\n]{0,4}(来了|来啦|来咯|到了)/.test(t))periodSeen(ymd(new Date()));
   var e=msgs.querySelector('.empty');if(e)msgs.innerHTML='';
   var fresh=false;
   if(!cur){cur={id:Date.now(),title:(t||(thought?'[心声]':'图片')).slice(0,18),msgs:[],summary:'',sumUpTo:0};convs.unshift(cur);fresh=true}
   var c=cur,imgs=pending.slice();pending=[];renderThumbs();
+  var um={role:'user',content:t,ts:Date.now()};if(thought)um.thought=thought;if(imgs.length)um.imgs=imgs.map(function(x){return x.thumb});
+  add('me',meHtml(um),true,um.ts); // 自己的话马上出现
+  var tb0=Date.now(),w=add('','<span class="dots"><span></span><span></span><span></span></span>',true,tb0),got=false;
+  islShow('Claude 思考中…');
+  try{await Promise.race([syncHealth(),new Promise(function(r){setTimeout(r,2500)})])}catch(e){}
   try{await Promise.race([liveRefresh(),new Promise(function(r){setTimeout(r,2500)})])}catch(e){}
-  var um={role:'user',content:t,ts:Date.now()},nk=narKey();if(c.narKey!==nk.key||nk.gt>0)um.nar=nk.text;
+  var nk={key:'',text:'',gt:0};try{
+  nk=narKey();if(c.narKey!==nk.key||nk.gt>0)um.nar=nk.text;
   nowTick(true);var nb=nowBlock(),pn=null;for(var q2=c.msgs.length-1;q2>=c.sumUpTo;q2--)if(c.msgs[q2].now!=null){pn=c.msgs[q2].now;break}if(nb!==(pn==null?'':pn)&&(nb||pn))um.now=nb||'【现在】之前记着的近况都已经清掉或收起来了';
   try{var mc=await Promise.race([matchCtx(t,c),new Promise(function(r){setTimeout(function(){r('')},3000)})]);if(mc){um.match=mc.text;um.matchId=mc.ids}}catch(e){}
   var lb=liveBlock();if(lb){var pl=null;for(var q=c.msgs.length-1;q>=0;q--)if(c.msgs[q].live){pl=c.msgs[q].live;break}um.live=(pl&&pl.replace(/^.*\n/,'')===lb.replace(/^.*\n/,''))?'【实时球赛】和上一条一样，没有新变化':lb}renderLiveChip();
   var rc=recall(t,c);if(rc)um.recall=rc;if(nk.gt>0||!mem.sessStart)mem.sessStart=um.ts;mem.lastTs=um.ts;noteDay(um.ts);saveMem();
-  if(thought)um.thought=thought;
-  if(imgs.length)um.imgs=imgs.map(function(x){return x.thumb});c.msgs.push(um);
-  add('me',meHtml(um),true,um.ts);inp.value='';inp.style.height='auto';renderList();
-  busy=true;$('send').disabled=true;
-  var tb=Date.now(),w=add('','<span class="dots"><span></span><span></span><span></span></span>',true,tb),got=false;
-  islShow('Claude 思考中…');
+  }catch(e){console.log('[send] 准备附注时出错',e)}
+  c.msgs.push(um);renderList();
+  var tb=Date.now();
   try{
     var r=await stream(MODELS[cfg.model],system(),apiMsgs(c,imgs),function(out){if(!got){got=true;islShow('正在回复…')}w.innerHTML=fmt(stripMarks(out));msgs.scrollTop=msgs.scrollHeight},{web:!!cfg.web,onSearch:function(){islShow('正在搜索…')}});
     var rt0=r.text;r.text=applyMarks(takeDrawer(r.text));if(r.text!==rt0){if(!r.text)r.text='嗯。';w.innerHTML=fmt(r.text)}
@@ -2835,7 +2851,7 @@ function cycHint(){var c=cfg.cyc||{};if(!c.start)return'填一下上次开始的
 var FS='https://site.api.espn.com/apis/site/v2/sports/soccer/',FW='https://site.web.api.espn.com/apis/common/v3/sports/soccer/';
 var FB_TEAMS=[{k:'mia',n:'国际迈阿密',e:'🩷',lg:'usa.1',id:'20232',table:true,sb:true,extra:['concacaf.champions','concacaf.leagues.cup','club.friendly','fifa.cwc']},{k:'arg',n:'阿根廷',e:'🇦🇷',lg:'all',id:'202'}];
 var FB_PLAYERS=[{id:'277206',n:'阿尔瓦雷斯'},{id:'96970',n:'罗梅罗'},{id:'233937',n:'利桑德罗'},{id:'337970',n:'尼科·帕斯'},{id:'285450',n:'恩佐'},{id:'219713',n:'劳塔罗'},{id:'164839',n:'迪巴拉'},{id:'376473',n:'马斯坦托诺'},{id:'320760',n:'巴尔科'}];
-var fbC={},fbSel=cfg.fbSel||'mia',fbLive={},fbTimer=null,fbQ=[],fbQT=null;
+var fbC={},fbSel='',fbLive={},fbTimer=null,fbQ=[],fbQT=null;
 function fSeen(){return mem.fbSeen||(mem.fbSeen={})}
 function fbGet(u,ttl){
   var c=fbC[u];if(c&&Date.now()-c.t<ttl)return Promise.resolve(c.d);
@@ -2972,7 +2988,7 @@ function renderMessi(){
     [].forEach.call(el.querySelectorAll('[data-last]'),function(ph){var a=ph.dataset.last.split('|');lastCard(a[0],a[1],{pid:'45843',tid:'20232',title:'Last · 迈阿密上一场'}).then(function(x){if(x)ph.outerHTML=x;else ph.remove()})})
   }).catch(function(){el.innerHTML='<p class="fnote">读不到梅西的数据，稍后再试</p>'})}
 function renderFootPanel(){
-  var pan=$('fPan');pan.innerHTML='<div class="fcard glass"><p class="fnote">读取中…</p></div>';
+  var pan=$('fPan');if(!fbSel){pan.innerHTML='';return}pan.innerHTML='<div class="fcard glass"><p class="fnote">读取中…</p></div>';
   var T=FB_TEAMS.filter(function(x){return x.k===fbSel})[0],P=FB_PLAYERS.filter(function(x){return x.id===fbSel})[0],sel=fbSel;
   (T?teamData(T).then(renderTeamPanel):P?playerData(P).then(renderPlayerPanel):Promise.resolve(''))
     .then(function(h){if(fbSel!==sel)return;pan.innerHTML=h||'<div class="fcard glass"><p class="fnote">没有数据</p></div>';
@@ -2981,9 +2997,12 @@ function renderFootPanel(){
     .catch(function(){if(fbSel===sel)pan.innerHTML='<div class="fcard glass"><p class="fnote">连不上比分数据，稍后再试</p></div>'})}
 $('vFoot').addEventListener('click',function(e){
   var b=e.target.closest('[data-k],[data-p]');if(!b)return;
-  fbSel=b.dataset.k||b.dataset.p;cfg.fbSel=fbSel;saveAll();
+  var v=b.dataset.k||b.dataset.p,pan=$('fPan'),was=fbSel;fbSel=(fbSel===v)?'':v; // 再点一次同一个就收起
   [].forEach.call(document.querySelectorAll('#vFoot .ftb,#vFoot .fp'),function(x){x.classList.toggle('on',(x.dataset.k||x.dataset.p)===fbSel)});
-  renderFootPanel()});
+  if(!fbSel){try{pan.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-10px)'}],{duration:200,easing:'ease-in'}).onfinish=function(){if(!fbSel)pan.innerHTML=''}}catch(x){pan.innerHTML=''}return}
+  renderFootPanel();
+  if(!was){try{pan.animate([{opacity:0,transform:'translateY(-10px)'},{opacity:1,transform:'none'}],{duration:280,easing:'cubic-bezier(.2,.8,.2,1)'})}catch(x){}}
+  setTimeout(function(){var r=pan.getBoundingClientRect();if(r.top>innerHeight-160)pan.scrollIntoView({behavior:'smooth',block:'start'})},120)});
 $('fRef').onclick=function(){fbC={};renderFoot();fbTick(true)};
 $('gear4').onclick=function(){openSheet()};$('gear5').onclick=function(){openSheet()};$('gear6').onclick=function(){openSheet()};
 
@@ -3193,6 +3212,39 @@ function matchCtx(t,c){
   var live={};liveWatched().forEach(function(w){live[w.ev.id]=1});
   var seen=c.msgs.slice(c.sumUpTo).map(function(m){return m.matchId||''}).join(',');
   return Promise.all(Ts.map(matchBlock)).then(function(bs){var ids=[],out=[];bs.forEach(function(b){if(!b||live[b.id]||seen.indexOf(b.id)>=0)return;ids.push(b.id);out.push(b.text)});return out.length?{ids:ids.join(','),text:out.join('\n')}:''})}
+/* ☀️ 起床小报：每天第一次打开（有当天睡眠数据，或者过了 13 点）弹一张卡片，点「知道啦」关掉 */
+var briefBusy=false;
+function briefHello(){var h=new Date().getHours();return h<5?'还没睡呀':h<11?'早上好':h<14?'中午好':h<18?'下午好':'晚上好'}
+function hm(d){return('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+function briefCheck(){
+  if(briefBusy||mem.briefDay===dayKey(Date.now()))return;
+  var today=ymd(new Date(Date.now()-18e6)),hl=mem.hlog||{},hd=hl[today];
+  if(!(hd&&hd.sleep!=null)&&new Date().getHours()<13)return; // 等睡眠数据，最晚 13 点也弹
+  briefBusy=true;
+  var items=[],tmo=function(p){return Promise.race([p.catch(function(){return null}),new Promise(function(r){setTimeout(function(){r(null)},5000)})])};
+  if(hd&&hd.sleep!=null){var past=Object.keys(hl).filter(function(k){return k<today&&hl[k].sleep!=null}).sort().slice(-7).map(function(k){return hl[k].sleep}),avg=past.length?past.reduce(function(a,b){return a+b},0)/past.length:null,df=avg==null?0:hd.sleep-avg;
+    items.push(['🛏️','睡了 '+hd.sleep+' 小时',avg==null?'':Math.abs(df)<.4?'和这周平时差不多':(df<0?'比这周平均少':'比这周平均多')+(Math.abs(df)>=1?' '+Math.abs(df).toFixed(1).replace(/\.0$/,'')+' 小时':'半小时')])}
+  var now=Date.now(),cut5=new Date();cut5.setHours(5,0,0,0);if(new Date().getHours()<5)cut5.setDate(cut5.getDate()-1);
+  var when=function(t){return t<+cut5?'昨晚':'今天'},seen={},todayList=[],end=new Date(cut5);end.setDate(end.getDate()+1);
+  var jobs=FB_TEAMS.map(function(T){return tmo(teamData(T)).then(function(d){if(!d)return;
+    var l=d.past&&d.past[0];if(l&&l.state==='post'&&now-new Date(l.date)<22*36e5){var me=l.home.id==T.id?l.home:l.away,op=l.home.id==T.id?l.away:l.home,r=resOf(l,T.id);
+      items.push(['⚽',when(+new Date(l.date)+2*36e5)+T.n+' '+me.s+':'+op.s+' '+({W:'赢了 ',L:'输给 ',D:'战平 '}[r]||'对 ')+zh(op.t.displayName),lgName(l)+(d.next?' · 下一场 '+fDate(d.next.date,true):'')])}
+    var n=d.next;if(n&&!seen[n.id]&&new Date(n.date)<end&&new Date(n.date)>now-3*36e5){seen[n.id]=1;todayList.push(n)}})});
+  jobs=jobs.concat(FB_PLAYERS.map(function(P){return tmo(playerData(P)).then(function(d){if(!d)return;
+    var g=d.games&&d.games[0];if(g&&now-new Date(g.date)<22*36e5&&(g.g||g.a)){items.push(['🌟',P.n+' '+(g.g?'进了 '+g.g+' 球':'')+(g.g&&g.a?'，':'')+(g.a?g.a+' 次助攻':''),zh(d.team.displayName)+' '+(g.score||'')+' '+(g.at==='@'?'客场对 ':'主场对 ')+zh((g.opp||{}).displayName||'')])}
+    var n=d.next;if(n&&!seen[n.id]&&new Date(n.date)<end&&new Date(n.date)>now-3*36e5){seen[n.id]=1;n._who=P.n;todayList.push(n)}})}));
+  Promise.all(jobs).then(function(){
+    todayList.sort(function(a,b){return new Date(a.date)-new Date(b.date)}).slice(0,3).forEach(function(n){var d=new Date(n.date);
+      items.push(['📅',(d.getHours()>=18?'今晚 ':'今天 ')+hm(d)+' '+zh(n.home.t.displayName)+' vs '+zh(n.away.t.displayName),(lgName(n)||'')+(n._who?(lgName(n)?' · ':'')+n._who+'的球队':'')])});
+    try{var pt=plantTip();if(pt)items.push([pt.icon,pt.text.split('，')[0].replace(/。$/,''),(pt.text.split('，').slice(1).join('，')+(pt.frost?' '+pt.frost:'')).trim()])}catch(e){}
+    briefBusy=false;
+    if(!items.length){mem.briefDay=dayKey(Date.now());saveMem();return}
+    var d0=new Date();
+    $('briefCard').innerHTML='<div class="bh"><span class="ow">🦉</span><span><b>'+briefHello()+'，猫猫</b><small>'+(d0.getMonth()+1)+'月'+d0.getDate()+'日 周'+'日一二三四五六'[d0.getDay()]+' · 你不在的时候发生了这些</small></span></div>'+
+      items.map(function(x){return'<div class="bi"><span class="be">'+x[0]+'</span><span><b>'+esc(x[1])+'</b>'+(x[2]?'<small>'+esc(x[2])+'</small>':'')+'</span></div>'}).join('')+'<button class="bok" id="briefOk">知道啦</button>';
+    $('brief').hidden=false;mem.briefDay=dayKey(Date.now());saveMem()})}
+$('brief').addEventListener('click',function(e){if(e.target.id==='briefOk'||e.target===$('brief'))$('brief').hidden=true});
+setTimeout(briefCheck,3500);document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(briefCheck,2500)});
 function renderLiveChip(){
   var el=$('liveChip');if(!el)return;var ws=liveWatched(),all=ws.map(function(w){return w.ev}).concat(uclNow.filter(function(e){return!ws.some(function(w){return w.ev.id===e.id})}));
   if(!all.length){el.hidden=true;return}
@@ -3216,7 +3268,7 @@ function syncHealth(loud){
     var hh=x.j.health;
     if(hh&&hh.text&&hh.t>(mem.syncT||0)){
       mem.syncT=hh.t;saveMem();
-      if(takeHealth(hh.text,hh.t,!loud)){if(!loud)toast('🦉 同步了身体数据',1600)}
+      if(takeHealth(hh.text,hh.t,!loud)){if(!loud)toast('🦉 同步了身体数据',1600);setTimeout(briefCheck,1500)}
     }else if(loud)toast('小后端连上了'+(hh?'':'（还没有数据）'),1800);
     return true
   }).catch(function(e){syncBusy=null;mem.syncErr=String(e&&e.message||e);saveMem();if(loud)toast('连不上小后端：'+mem.syncErr.slice(0,40),3000);return false});
@@ -3580,7 +3632,8 @@ $('pack').onclick=async function(){
   toast(ok?'整理好了':'这次没整理成功',2000)};
 
 /* 设置 */
-function openSheet(){$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
+var APP_VER='11/22·g';
+function openSheet(){try{$('verTag').textContent='版本 '+APP_VER+' · '+(window.__vp||('网页 '+innerHeight+' · 屏幕 '+screen.height))}catch(e){}$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
 async function closeSheet(){var p=document.querySelector('#sheet .panel');await CaramelPudding.out(p);$('sheet').hidden=true;p.classList.remove('cp-out')}
 $('gear').onclick=openSheet;$('close').onclick=closeSheet;
 function openMem(){side(false);$('f-memory').value=cfg.memory||'';$('f-main').value=mem.main||'';$('f-diary').value=mem.diary||'';renderCards();$('msheet').hidden=false;$('msheet').querySelector('.panel').scrollTop=0}
