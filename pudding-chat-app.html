@@ -301,6 +301,10 @@ body[data-v="book"]::after{opacity:1}
 .lol .lh small{color:var(--mute);font-size:12px;white-space:nowrap}
 .lol .ov{margin:0 0 6px;font-size:14.5px;line-height:1.65}
 .lol details{border-top:1px solid var(--line);padding:2px 0}
+.lscroll{max-height:360px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin-top:10px;padding:0 6px 10px 0;border-top:1px solid var(--line);-webkit-mask-image:linear-gradient(#000 88%,transparent);mask-image:linear-gradient(#000 88%,transparent)}
+.lscroll .lsh{margin:0;padding:12px 0 4px;font-size:14.5px;font-weight:700;display:flex;gap:6px;align-items:baseline}.lscroll .lsh small{color:var(--mute);font-weight:400}
+.lscroll ul{margin:0 0 4px;padding-left:18px}.lscroll li{margin:3px 0;line-height:1.6}
+.lhint{margin:6px 0 0;text-align:center;font-size:11.5px;color:var(--mute)}
 .lol details summary{cursor:pointer;list-style:none;padding:9px 0;font-weight:600;font-size:14.5px;display:flex;justify-content:space-between}
 .lol details summary::-webkit-details-marker{display:none}
 .lol details summary::after{content:"▾";color:var(--mute);font-weight:400}
@@ -1832,7 +1836,7 @@ async function once(model,system,messages,max){
   if(!res.ok)throw new Error(await fail(res));
   var j=await res.json(),u=j.usage||{};addCost(model,u.input_tokens||0,u.cache_read_input_tokens||0,u.cache_creation_input_tokens||0,u.output_tokens||0,0);return j.content.map(function(c){return c.text||''}).join('')}
 async function stream(model,system,messages,onText,opt){opt=opt||{};
-  var wc=withCache(system,messages),res=await fetch(URL_,{method:'POST',headers:hdr(),body:JSON.stringify(Object.assign({model:model,max_tokens:4096,system:wc.sys,messages:wc.ms,stream:true},opt.web?{tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}]}:{}))});
+  var wc=withCache(system,messages),res=await fetch(URL_,{method:'POST',headers:hdr(),body:JSON.stringify(Object.assign({model:model,max_tokens:opt.max||4096,system:wc.sys,messages:wc.ms,stream:true},opt.web?{tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}]}:{}))});
   if(!res.ok)throw new Error(await fail(res));
   var rd=res.body.getReader(),dec=new TextDecoder(),buf='',out='',tokens=0,cached=0,srcs=[],cites=[],searches=0,inTok=0,cw=0,outTok=0;
   function addSrc(arr,u,t){if(u&&/^https?:/.test(u)&&!arr.some(function(x){return x.u===u}))arr.push({u:u,t:(t||u).slice(0,60)})}
@@ -2132,10 +2136,15 @@ async function lolSummarize(p){
     var en='https://www.leagueoflegends.com/en-us/news/game-updates/league-of-legends-patch-'+p.replace('.','-')+'-notes/';
     var q='请找到英雄联盟官网的「League of Legends Patch '+p+' Notes」（'+en+'），只用官网这一版的内容，用简体中文总结。\n'+
       '格式必须是下面这样，每块用【】标题开头，条目用「- 」开头，没有内容的块写「- 这版没有」：\n'+
-      '【概览】一两句话说这版主要改了什么\n【英雄】- 每条一个英雄：加强/削弱/调整 + 一句话说改了啥\n【装备与符文】\n【系统与模式】（包括大乱斗、地图、排位等）\n【皮肤】\n'+
-      '官网改了的英雄、装备都要列全，不要只挑几个。每个条目必须写在同一行里，不要换行、不要子列表。英雄和装备用国服常用中文名。不要写数值表格，不要客套话，不要编造官网没写的内容。如果找不到 '+p+' 这一版的官方说明，只回复「没找到」。';
+      '【概览】一句话说这版主要改了什么\n【英雄】- 每条一个英雄：加强/削弱/调整 + 一句话说改了啥\n【装备与符文】- 每条一个装备或符文：加强/削弱/调整/新增 + 一句话\n【皮肤】- 这版新出的皮肤，一条一个系列\n【其他】- 只写大的玩法改动（新模式、大乱斗、地图、排位规则），最多 3 条\n'+
+      '英雄、装备与符文是重点，官网改了的都要列全，不要只挑几个。每条不超过 30 个字，写在同一行里，不要换行、不要子列表。'+
+      '完全不要写：bug 修复、体验优化、性能、客户端、界面改进、音效、文本修正这类内容，哪个块都不要放。英雄和装备用国服常用中文名。不要写数值表格，不要客套话，不要编造官网没写的内容。如果找不到 '+p+' 这一版的官方说明，只回复「没找到」。';
     var page=await pageText(en),txt;
-    if(page)txt=await haikuAsk(q.replace(/^请找到英雄联盟官网的「League of Legends Patch [^」]*」（[^）]*），只用官网这一版的内容，/,'下面是英雄联盟官网「Patch '+p+' Notes」的原文，')+'\n\n【官网原文】\n'+page.slice(0,90000),false,null,5000);
+    if(page){ // 边写边显示，不会看起来像卡住；3 分钟还没写完就算失败
+      var qq=q.replace(/^请找到英雄联盟官网的「League of Legends Patch [^」]*」（[^）]*），只用官网这一版的内容，/,'下面是英雄联盟官网「Patch '+p+' Notes」的原文，')+'\n\n【官网原文】\n'+page.slice(0,60000);
+      var r=await Promise.race([stream(MODELS[0],'你是游戏更新说明的总结助手，只根据给你的官网原文写，用简体中文。',[{role:'user',content:qq}],function(out){var el=$('lolProg');if(el)el.textContent='🦉 正在写总结… 已经写了 '+out.length+' 个字'},{max:5000}),
+        new Promise(function(_,rej){setTimeout(function(){rej(new Error('写得太久了，点「重新总结」再试一次'))},180000)})]);
+      txt=(r.text||'').trim()}
     else txt=await haikuAsk(q,true,'leagueoflegends.com',5000);
     if(!/【概览】/.test(txt))throw new Error(/没找到/.test(txt)?'官网还没找到 '+p+' 的更新说明，晚点再试':'这次没总结成功，点重新总结再试一次');
     LOL.sum={v:p,at:Date.now(),text:txt.slice(txt.indexOf('【概览】'))};save('pc_lol',LOL);
@@ -2147,13 +2156,16 @@ function lolHtml(t){
   for(var i=1;i<parts.length;i+=2){var h=parts[i],b=(parts[i+1]||'').trim();
     if(h==='概览'){ov=b.replace(/^-\s*/gm,'');continue}
     var li=[];b.split('\n').forEach(function(x){var ind=/^\s{2,}|^\s*[-·•*]\s*[-·•*]/.test(x);x=x.replace(/^\s*[-·•*]+\s*/,'').trim();if(!x)return;if(li.length&&(ind||/[：:]$/.test(li[li.length-1])))li[li.length-1]+=(/[：:]$/.test(li[li.length-1])?'':'；')+x;else li.push(x)});
-    if(!li.length||(li.length===1&&/这版没有/.test(li[0])))continue;secs.push({h:h,li:li})}
-  return(ov?'<p class="ov">'+fmt(ov)+'</p>':'')+secs.map(function(x,i){return'<details'+(i===0?' open':'')+'><summary>'+esc(x.h)+' · '+x.li.length+'</summary><ul>'+x.li.map(function(l){return'<li>'+tagBuff(fmt(l))+'</li>'}).join('')+'</ul></details>'}).join('')}
+    if(/修复|bug|优化|改进|体验|性能|客户端/i.test(h))continue;
+    li=li.filter(function(l){return!/这版没有/.test(l)&&!/(修复|bug|错误|优化|改进了|体验|性能|客户端|文本)/i.test(l)});
+    if(!li.length)continue;secs.push({h:/系统|模式|其他/.test(h)?'其他':h,li:li})}
+  var rk=function(h){return/英雄/.test(h)?0:/装备|符文/.test(h)?1:/皮肤/.test(h)?2:3};secs.sort(function(a,b){return rk(a.h)-rk(b.h)});
+  return(ov?'<p class="ov">'+fmt(ov)+'</p>':'')+(secs.length?'<div class="lscroll">'+secs.map(function(x){return'<h5 class="lsh">'+esc(x.h)+' <small>'+x.li.length+'</small></h5><ul>'+x.li.map(function(l){return'<li>'+tagBuff(fmt(l))+'</li>'}).join('')+'</ul>'}).join('')+'</div><p class="lhint">卡片里可以上下滑</p>':'')}
 function renderLol(){
   var el=$('gLol');if(!el)return;var p=LOL.latest,sm=LOL.sum;
   var head='<div class="lh"><b>'+(p?'版本 '+esc(p):'英雄联盟')+'</b><small>'+(sm&&sm.v===p?'总结于 '+fDate(new Date(sm.at).toISOString(),true).replace(/ 周./,''):'')+'</small></div>';
   var body;
-  if(lolBusy)body='<p class="fnote">🦉 正在读 '+esc(p||'')+' 的官方更新说明…</p>';
+  if(lolBusy)body='<p class="fnote" id="lolProg">🦉 正在读 '+esc(p||'')+' 的官方更新说明…</p>';
   else if(sm&&sm.v===p)body=lolHtml(sm.text);
   else if(!p)body='<p class="fnote">暂时查不到当前版本，稍后再试</p>';
   else if(!cfg.key)body='<p class="fnote">在设置里填了 API 密钥以后，出新版本会自动总结</p>';
@@ -2197,7 +2209,10 @@ async function owCheck(force){
       '英雄用国服中文名，不知道中文名的就写英文名。不要写具体数值表，不要写地图、模式、角斗领域、修复。不要编造官网没写的内容。';
     OW.ct=Date.now();save('pc_ow',OW);
     var page=await pageText('https://overwatch.blizzard.com/en-us/news/patch-notes/'),txt;
-    if(page)txt=await haikuAsk(q.replace(/^请看守望先锋官网的补丁说明 \S+ ，/,'下面是守望先锋官网补丁说明页的原文（最新的在最前面）。请在里面')+'\n\n【官网原文】\n'+page.slice(0,90000),false,null,5000);
+    if(page){var qq=q.replace(/^请看守望先锋官网的补丁说明 \S+ ，/,'下面是守望先锋官网补丁说明页的原文（最新的在最前面）。请在里面')+'\n\n【官网原文】\n'+page.slice(0,60000);
+      var r=await Promise.race([stream(MODELS[0],'你是游戏更新说明的总结助手，只根据给你的官网原文写，用简体中文。',[{role:'user',content:qq}],function(out){var el=$('owProg');if(el)el.textContent='🦉 正在写… 已经写了 '+out.length+' 个字'},{max:5000}),
+        new Promise(function(_,rej){setTimeout(function(){rej(new Error('写得太久了，点「现在看一眼」再试一次'))},180000)})]);
+      txt=(r.text||'').trim()}
     else txt=await haikuAsk(q,true,'overwatch.blizzard.com');
     OW.ct=Date.now();
     var m=txt.match(/【日期】\s*(\d{4}-\d{2}-\d{2})/);
@@ -2210,7 +2225,7 @@ async function owCheck(force){
 function renderOw(){
   var el=$('gOw');if(!el)return;var sm=OW.sum,nx=owNext(),f=function(d){return(d.getMonth()+1)+'月'+d.getDate()+'日'};
   var head='<div class="lh"><b>'+(sm?f(sDate(sm.date))+' 大补丁':'英雄平衡大补丁')+'</b><small>下一次预计 '+f(nx)+'</small></div>',body;
-  if(owBusy)body='<p class="fnote">🦉 正在官网看有没有新的英雄改动…</p>';
+  if(owBusy)body='<p class="fnote" id="owProg">🦉 正在官网看有没有新的英雄改动…</p>';
   else if(sm)body=lolHtml(sm.text.replace(/【日期】[^\n]*\n?/,''));
   else if(!cfg.key)body='<p class="fnote">在设置里填了 API 密钥以后，有大补丁会自动总结英雄改动</p>';
   else body='<p class="fnote">还没看过</p>';
@@ -3632,7 +3647,7 @@ $('pack').onclick=async function(){
   toast(ok?'整理好了':'这次没整理成功',2000)};
 
 /* 设置 */
-var APP_VER='11/22·g';
+var APP_VER='11/22·i';
 function openSheet(){try{$('verTag').textContent='版本 '+APP_VER+' · '+(window.__vp||('网页 '+innerHeight+' · 屏幕 '+screen.height))}catch(e){}$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
 async function closeSheet(){var p=document.querySelector('#sheet .panel');await CaramelPudding.out(p);$('sheet').hidden=true;p.classList.remove('cp-out')}
 $('gear').onclick=openSheet;$('close').onclick=closeSheet;
