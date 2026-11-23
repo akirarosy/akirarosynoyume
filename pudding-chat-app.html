@@ -412,6 +412,19 @@ body[data-v="book"]::after{opacity:1}
  #menu{visibility:visible}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.amenu small{margin-left:4px;color:var(--mute);font-size:11px}
+#flist .fi{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 0 8px;border-radius:16px;background:var(--fld);border:1px solid var(--line)}
+#flist .fi .fn{flex:1;min-width:0}#flist .fi b{display:block;font-weight:600;font-size:14px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#flist .fi small{color:var(--mute);font-size:11.5px}#flist .fi.off b{color:var(--mute);text-decoration:line-through}
+#flist .fi button{border:0;background:none;color:var(--mute);font-size:15px;padding:4px 6px;cursor:pointer}
+#flist .fi .fd.arm{color:#c0392b;font-size:12px}
+#flist .fi .fk{font-size:10.5px;padding:1px 7px;margin:0 6px 0 0;border-radius:99px;background:var(--caramel);color:#fff;vertical-align:1px}
+#flist .fi .fk.ref{background:rgba(120,130,150,.25);color:var(--ink)}
+#flist .sw{position:relative;width:38px;height:22px;flex:none}#flist .sw input{opacity:0;width:0;height:0;position:absolute}
+#flist .sw i{position:absolute;inset:0;border-radius:99px;background:rgba(140,120,100,.3);transition:.2s}#flist .sw i:before{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+#flist .sw input:checked+i{background:var(--caramel)}#flist .sw input:checked+i:before{transform:translateX(16px)}
+#flist pre{white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;margin:-2px 0 10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.45);font:12px/1.55 ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+.fempty{color:var(--mute);text-align:center;padding:18px 0 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -447,7 +460,7 @@ body[data-v="book"]::after{opacity:1}
 <button class="livechip" id="liveChip" hidden></button>
 <div class="thumbs" id="thumbs"></div>
 <textarea id="in" rows="1" placeholder="想聊点什么？"></textarea>
-<div class="amenu" id="amenu" hidden><button data-am="pic">🖼️ 图片</button><button data-am="tv">💭 心声</button></div>
+<div class="amenu" id="amenu" hidden><button data-am="pic">🖼️ 图片</button><button data-am="tv">💭 心声</button><button data-am="files">📎 资料库<small id="fcount"></small></button></div>
 <div class="tools"><button class="ic2" id="attach" aria-label="添加图片或心声">＋</button><button class="chip" id="mchip" aria-haspopup="menu"><span id="mname"></span> ▾</button><button class="chip" id="wchip" aria-pressed="false">🌐 联网</button><span class="grow"></span><button class="send" id="send" aria-label="发送"><svg viewBox="0 0 24 24"><path d="M21 3L3 10.5l7 2.5 2.5 7L21 3z"/></svg></button></div>
 <input id="pic" type="file" accept="image/*" multiple hidden>
 </div>
@@ -568,6 +581,7 @@ body[data-v="book"]::after{opacity:1}
 </div></div>
 <div class="libsheet" id="libsheet" hidden><div class="lhd"><div class="ltabs" id="libTabs"></div><button class="ic" id="libX" aria-label="关闭">✕</button></div><div class="ltools" id="libTools"></div><div class="lbody" id="libBody"></div><div class="libdet" id="libDet" hidden></div></div>
 <div class="sheet" id="dsheet" hidden><div class="panel cp-pop"><h2>🗃️ 抽屉</h2><p class="hint" style="margin-top:-6px">小猫头鹰悄悄放进来的东西都在这里，不催你，慢慢看。</p><div id="dlist"></div><div class="row2"><button class="send" id="dclose">回去</button></div></div></div>
+<div class="sheet" id="fsheet" hidden><div class="panel cp-pop"><h2>📎 资料库</h2><p class="hint" style="margin-top:-6px">传进来的 .md / .txt 文件，所有对话都会带上。<b>指令</b>：像「设定」一样照着做（人设、规则、写作风格）；<b>资料</b>：需要时查阅参考（笔记、世界观、文档）。点文件名下面的小标签切换。不想带的关掉就行，手机和电脑会同步。</p><div id="flist"></div><p class="hint" id="fsum"></p><input id="fpick" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple hidden><div class="row2"><button class="ghost" id="fclose">回去</button><button class="send" id="fadd">＋ 传文件</button></div></div></div>
 <div class="bpop" id="brief" hidden><div class="bcard" id="briefCard"></div></div>
 <div class="sheet" id="tsheet" hidden><div class="panel cp-pop">
 <h2>💭 心声</h2>
@@ -1879,8 +1893,12 @@ function system(){
   if(cfg.name)s+='\n\n用户的名字是'+cfg.name+'。';
   if(cfg.persona)s+='\n\n【设定】\n'+cfg.persona;
   if(cfg.memory)s+='\n\n【记忆本】（用户亲手写的，最重要）\n'+cfg.memory;
+  var fr=(mem.files||[]).filter(function(f){return f.on&&f.kind!=='ref'});
+  if(fr.length)s+='\n\n【设定文件】（用户亲手写的设定和规则，和上面的设定一样，要照着做）'+fr.map(function(f){return'\n\n《'+f.name+'》\n'+f.text}).join('');
   if(mem.main)s+='\n\n【主摘要】\n'+mem.main;
   if(mem.diary)s+='\n\n【生活日记】（最近的情绪脉络）\n'+mem.diary;
+  var fo=(mem.files||[]).filter(function(f){return f.on&&f.kind==='ref'});
+  if(fo.length)s+='\n\n【资料库】（用户上传的参考资料，聊天时需要就查阅参考）'+fo.map(function(f){return'\n\n《'+f.name+'》\n'+f.text}).join('');
   if(cur&&cur.summary)s+='\n\n【这段对话更早的前情提要】\n'+cur.summary;
   return s}
 async function summarize(c){
@@ -2042,8 +2060,42 @@ function renderThumbs(){
   var s='';pending.forEach(function(p,i){s+='<div class="th"><img alt="" src="'+p.thumb+'"><button data-i="'+i+'" aria-label="移除">✕</button></div>'});
   $('thumbs').innerHTML=s}
 $('attach').onclick=function(e){e.stopPropagation();$('amenu').hidden=!$('amenu').hidden};
-$('amenu').onclick=function(e){var b=e.target.closest('[data-am]');if(!b)return;$('amenu').hidden=true;if(b.dataset.am==='pic')$('pic').click();else openThought()};
+$('amenu').onclick=function(e){var b=e.target.closest('[data-am]');if(!b)return;$('amenu').hidden=true;if(b.dataset.am==='pic')$('pic').click();else if(b.dataset.am==='files')openFiles();else openThought()};
 document.addEventListener('click',function(e){if(!$('amenu').hidden&&!e.target.closest('#amenu'))$('amenu').hidden=true});
+/* ---------- 资料库：.md / .txt 文件，所有对话共用 ---------- */
+var FMAX=400000;
+function fLen(n){return n>=10000?(Math.round(n/1000)/10)+' 万字':n+' 字'}
+function fCount(){var L=mem.files||[],on=L.filter(function(f){return f.on}).length;var el=$('fcount');if(el)el.textContent=L.length?on+'/'+L.length:''}
+async function addFiles(list){
+  var L=mem.files=mem.files||[],n=0;
+  for(var i=0;i<list.length;i++){var f=list[i];
+    if(!/\.(md|markdown|txt)$/i.test(f.name)&&!/text\/(markdown|plain)/.test(f.type)){toast('「'+f.name+'」不是 .md 或 .txt，没加',2400);continue}
+    var tx=await f.text();if(tx.length>FMAX){toast('「'+f.name+'」太长了（'+fLen(tx.length)+'），先拆小一点再传',2800);continue}
+    var old=L.find(function(x){return x.name===f.name});
+    if(old){old.text=tx;old.up=Date.now();old.on=true}else L.push({id:String(Date.now())+Math.random().toString(36).slice(2,6),name:f.name,text:tx,on:true,kind:'rule',at:Date.now()});n++}
+  if(n){saveMem();toast('📎 放进资料库了 '+n+' 个，之后的聊天都会带上',2400)}
+  renderFiles();fCount()}
+function renderFiles(){
+  var L=mem.files||[],box=$('flist');if(!box)return;
+  if(!L.length){box.innerHTML='<div class="fempty">还没有资料。点下面「＋ 传文件」，可以一次选好几个 .md 文件。</div>';$('fsum').textContent='';return}
+  box.innerHTML=L.map(function(f){return'<div class="fi'+(f.on?'':' off')+'" data-id="'+esc(f.id)+'"><label class="sw" title="带不带进聊天"><input type="checkbox"'+(f.on?' checked':'')+' data-fon><i></i></label><div class="fn"><b>'+esc(f.name)+'</b><small><button class="fk'+(f.kind==='ref'?' ref':'')+'" data-fkind title="点一下切换：指令 / 资料">'+(f.kind==='ref'?'资料':'指令')+'</button>'+fLen(f.text.length)+' · '+fDate(new Date(f.up||f.at).toISOString(),true).replace(/ 周./,'')+'</small></div><button data-fview title="看看内容">👁</button><button class="fd" data-fdel title="删除">✕</button></div>'}).join('');
+  var on=L.filter(function(f){return f.on}),tot=on.reduce(function(s,f){return s+f.text.length},0);
+  var nr=on.filter(function(f){return f.kind!=='ref'}).length;
+  $('fsum').textContent=on.length?'现在每次聊天会带上 '+on.length+' 个文件（指令 '+nr+' 个、资料 '+(on.length-nr)+' 个），一共 '+fLen(tot)+'。'+(tot>60000?'资料比较多，每条消息会贵一点（有缓存，第二条起便宜很多）。':''):'所有文件都关着，聊天时不会带。'}
+$('flist').addEventListener('click',function(e){
+  var it=e.target.closest('.fi');if(!it)return;var L=mem.files||[],f=L.find(function(x){return x.id===it.dataset.id});if(!f)return;
+  if(e.target.closest('[data-fview]')){var nx=it.nextElementSibling;if(nx&&nx.tagName==='PRE'){nx.remove();return}var pre=document.createElement('pre');pre.textContent=f.text.slice(0,20000)+(f.text.length>20000?'\n……（后面还有）':'');it.after(pre);return}
+  if(e.target.closest('[data-fkind]')){f.kind=f.kind==='ref'?'rule':'ref';f.up=Date.now();saveMem();renderFiles();toast(f.kind==='ref'?'「'+f.name+'」改成资料：需要时参考':'「'+f.name+'」改成指令：会照着做',2000);return}
+  var d=e.target.closest('[data-fdel]');
+  if(d){if(!d.classList.contains('arm')){d.classList.add('arm');d.textContent='再点删除';setTimeout(function(){if(d.isConnected){d.classList.remove('arm');d.textContent='✕'}},3000);return}
+    mem.files=L.filter(function(x){return x!==f});syDel('f',f.id);saveMem();renderFiles();fCount();return}});
+$('flist').addEventListener('change',function(e){if(!e.target.matches('[data-fon]'))return;var it=e.target.closest('.fi'),f=(mem.files||[]).find(function(x){return x.id===it.dataset.id});if(!f)return;f.on=e.target.checked;f.up=Date.now();saveMem();renderFiles();fCount()});
+function openFiles(){renderFiles();$('fsheet').hidden=false;$('fsheet').querySelector('.panel').scrollTop=0}
+async function closeFiles(){var p=document.querySelector('#fsheet .panel');try{await CaramelPudding.out(p)}catch(e){}$('fsheet').hidden=true;p.classList.remove('cp-out')}
+$('fadd').onclick=function(){$('fpick').click()};
+$('fpick').onchange=function(){var fs=[].slice.call(this.files||[]);this.value='';addFiles(fs)};
+$('fclose').onclick=closeFiles;$('fsheet').addEventListener('click',function(e){if(e.target===$('fsheet'))closeFiles()});
+setTimeout(fCount,0);
 function openThought(){if(inp.value.trim())$('t-sp').value=inp.value;$('tsheet').hidden=false;setTimeout(function(){$('t-th').focus()},250)}
 async function closeThought(){var p=document.querySelector('#tsheet .panel');try{await CaramelPudding.out(p)}catch(e){}$('tsheet').hidden=true;p.classList.remove('cp-out')}
 $('tclose').onclick=closeThought;$('tsheet').addEventListener('click',function(e){if(e.target===$('tsheet'))closeThought()});
@@ -2162,15 +2214,21 @@ async function lolSummarize(p){
       var qq=q.replace(/^请找到英雄联盟官网的「League of Legends Patch [^」]*」（[^）]*），只用官网这一版的内容，/,'下面是英雄联盟官网「Patch '+p+' Notes」的原文，')+'\n\n【官网原文】\n'+page.slice(0,60000);
       var r=await Promise.race([stream(MODELS[0],'你是游戏更新说明的总结助手，只根据给你的官网原文写，用简体中文。',[{role:'user',content:qq}],function(out){var el=$('lolProg');if(el)el.textContent='🦉 正在写总结… 已经写了 '+out.length+' 个字'},{max:5000}),
         new Promise(function(_,rej){setTimeout(function(){rej(new Error('写得太久了，点「重新总结」再试一次'))},180000)})]);
-      txt=(r.text||'').trim()}
-    else{var el0=$('lolProg');if(el0)el0.textContent='🦉 小后端连不上，改成自己去官网读…';
+      txt=lolNorm(r.text)}
+    if(!lolOk(txt)){var el0=$('lolProg');if(el0)el0.textContent=page?'🦉 读原文没写好，换个办法：自己去官网找…':'🦉 小后端连不上，改成自己去官网读…';
       var r2=await Promise.race([stream(MODELS[0],'你是游戏更新说明的总结助手，用简体中文。',[{role:'user',content:q}],function(out){var el=$('lolProg');if(el)el.textContent='🦉 正在写总结… 已经写了 '+out.length+' 个字'},{max:5000,web:true,domain:'leagueoflegends.com',onSearch:function(){var el=$('lolProg');if(el)el.textContent='🦉 正在官网上找 '+p+' 的更新说明…'}}),
         new Promise(function(_,rej){setTimeout(function(){rej(new Error('写得太久了，点「重新总结」再试一次'))},180000)})]);
-      txt=(r2.text||'').trim()}
-    if(!/【概览】/.test(txt))throw new Error(/没找到/.test(txt)?'官网还没找到 '+p+' 的更新说明，晚点再试':'这次没总结成功，点重新总结再试一次');
-    LOL.sum={v:p,at:Date.now(),text:txt.slice(txt.indexOf('【概览】'))};save('pc_lol',LOL);
+      txt=lolNorm(r2.text)}
+    if(!lolOk(txt)){LOL.raw=String(txt||'').slice(0,600);save('pc_lol',LOL);
+      throw new Error(/没找到|找不到|未找到/.test(txt)?'官网还没找到 '+p+' 的更新说明，晚点再试':'这次没总结成功，点重新总结再试一次'+(txt?'（它回的开头是：「'+txt.replace(/\s+/g,' ').slice(0,36)+'…」）':'（它什么都没回）'))}
+    if(txt.indexOf('【概览】')<0)txt='【概览】\n'+txt;
+    LOL.sum={v:p,at:Date.now(),text:txt.slice(txt.indexOf('【概览】'))};delete LOL.raw;save('pc_lol',LOL);
   }catch(e){lolErr=e instanceof TypeError?'连不上，检查一下网络':e.message}
   lolBusy=false;renderLol()}
+// 模型偶尔不按【】写标题（写成 **概览**、## 英雄、概览：），先统一成【】再判断
+function lolNorm(s){s=String(s||'').replace(/```[a-z]*\n?/g,'').trim();
+  return s.replace(/^[ \t]*(?:#{1,4}[ \t]*)?(?:\*\*)?[ \t]*[【\[]?(概览|英雄|装备与符文|装备和符文|装备|符文|皮肤|其他)[】\]]?[ \t]*(?:\*\*)?[ \t]*[:：]?[ \t]*$/gm,'【$1】').replace(/【装备和符文】/g,'【装备与符文】')}
+function lolOk(s){return /【概览】/.test(s)||(/【英雄】/.test(s)&&/【(装备与符文|装备|皮肤)】/.test(s))}
 function tagBuff(h){return h.replace(/(加强)/g,'<span class="up">$1</span>').replace(/(削弱)/g,'<span class="dn">$1</span>')}
 function lolHtml(t){
   var parts=t.split(/【([^】]+)】/),ov='',secs=[];
@@ -3302,6 +3360,7 @@ window.Rosy={
     return Promise.all(FB_TEAMS.map(function(T){return tmo(teamData(T)).then(function(d){if(d)add(d.next)})}).concat(FB_PLAYERS.map(function(P){return tmo(playerData(P)).then(function(d){if(d)add(d.next)})}))).then(function(){return list.sort(function(a,b){return a.t-b.t})})},
   keep:function(on){window.__rosyKeep=!!on;if(on)fbTick(true)},
   hooks:{},
+  addFiles:function(fs){return addFiles(fs).then(openFiles)},
   conv:function(){return cur?cur.id:null},
   mem:function(){return mem},save:function(){saveMem()},
   send:function(x){send(x)}
@@ -3686,7 +3745,7 @@ $('pack').onclick=async function(){
   toast(ok?'整理好了':'这次没整理成功',2000)};
 
 /* 设置 */
-var APP_VER='11/23·a';
+var APP_VER='11/23·d';
 (function(){try{var L='auto';try{L=localStorage.getItem('pc_layout')||'auto'}catch(e){}if(L==='on'||(L==='auto'&&matchMedia('(min-width:700px) and (pointer:fine)').matches)){var sc=document.createElement('script');sc.src='desktop.js?v='+encodeURIComponent(APP_VER);sc.defer=true;document.head.appendChild(sc)}}catch(e){}})();
 function openSheet(){try{var fl=$('f-lay');fl.value=(function(){try{return localStorage.getItem('pc_layout')||'auto'}catch(e){return 'auto'}})();fl.onchange=function(){try{localStorage.setItem('pc_layout',fl.value)}catch(e){}location.reload()}}catch(e){}try{$('verTag').textContent='版本 '+APP_VER+' · '+(window.__vp||('网页 '+innerHeight+' · 屏幕 '+screen.height))}catch(e){}$('f-name').value=cfg.name||'';var cy=cfg.cyc||{};$('f-cycs').value=cy.start||'';$('f-cycl').value=cy.len||'';$('f-cycd').value=cy.dur||'';$('f-cych').textContent=cycHint();$('f-key').value=cfg.key;var sy=cfg.sync||{};$('f-surl').value=sy.url||'https://owl.akirarosy.workers.dev';$('f-stok').value=sy.token||'';$('f-riot').value=cfg.riot||'Diurnal Sect#0630';$('f-sid').value=cfg.sid||'76561198814202301';$('f-sst').textContent=syncHint();$('f-syn').textContent=synHint();$('f-persona').value=cfg.persona;$('f-note').checked=cfg.aiNote!==false;$('f-wfx').value=cfg.wfx||'auto';$('sheet').hidden=false}
 async function closeSheet(){var p=document.querySelector('#sheet .panel');await CaramelPudding.out(p);$('sheet').hidden=true;p.classList.remove('cp-out')}
@@ -3731,8 +3790,8 @@ $('wipe').onclick=function(){
 try{new ResizeObserver(function(){document.documentElement.style.setProperty('--dock',$('dock').offsetHeight+'px')}).observe($('dock'))}catch(e){}
 /* 🔄 全同步：聊天、记忆、周信、设置、书（进度和讨论，正文另外传）都存在小后端
    每台设备打开、切回来、隔几分钟、改了东西之后一会儿，都会拉下来三方合并再传上去；API 密钥不同步 */
-var SY=load('pc_sync',{v:0,up:{},del:{c:{},k:{},b:{}}}),syBase=null,syBusy=false,syT=null,syErr='',syTimer=null;
-SY.del=SY.del||{c:{},k:{},b:{}};SY.up=SY.up||{};
+var SY=load('pc_sync',{v:0,up:{},del:{c:{},k:{},b:{},f:{}}}),syBase=null,syBusy=false,syT=null,syErr='',syTimer=null;
+SY.del=SY.del||{c:{},k:{},b:{}};SY.del.f=SY.del.f||{};SY.up=SY.up||{};
 var SY_SKIP={key:1,sync:1};
 function syOn(){var s=cfg.sync||{};return !!(s.url&&s.token)}
 function syU(p){return cfg.sync.url+p+(p.indexOf('?')>=0?'&':'?')+'token='+encodeURIComponent(cfg.sync.token)}
@@ -3753,10 +3812,11 @@ function lastTs(c){var m=c.msgs||[];return m.length?(m[m.length-1].ts||0):(+c.id
 function mById(L,R,del,fn){var map={},o=[];(L||[]).forEach(function(x){map[x.id]={l:x}});(R||[]).forEach(function(x){(map[x.id]=map[x.id]||{}).r=x});
   Object.keys(map).forEach(function(id){if(del[String(id)])return;var x=map[id];o.push(x.l&&x.r?fn(x.l,x.r):(x.l||x.r))});return o}
 function syMerge(L,R,B){
-  var del={};['c','k','b'].forEach(function(k){del[k]=Object.assign({},(R.del||{})[k],(L.del||{})[k]);Object.keys(del[k]).forEach(function(i){if(Date.now()-del[k][i]>5184e6)delete del[k][i]})});
+  var del={};['c','k','b','f'].forEach(function(k){del[k]=Object.assign({},(R.del||{})[k],(L.del||{})[k]);Object.keys(del[k]).forEach(function(i){if(Date.now()-del[k][i]>5184e6)delete del[k][i]})});
   var convs2=mById(L.convs,R.convs,del.c,function(a,b){var nw=lastTs(a)>=lastTs(b)?a:b,c=Object.assign({},nw);c.msgs=mMsgs(a.msgs,b.msgs);var s=(a.sumUpTo||0)>=(b.sumUpTo||0)?a:b;c.summary=s.summary;c.sumUpTo=s.sumUpTo;return c}).sort(function(a,b){return lastTs(b)-lastTs(a)});
   var bm=B.mem||{},mem2=mObj(L.mem,R.mem,bm,{
     cards:function(l,r){return mById(l,r,del.k,function(a){return a})},
+    files:function(l,r){return mById(l,r,del.f,function(a,b){return(a.up||a.at||0)>=(b.up||b.at||0)?a:b}).sort(function(a,b){return(a.at||0)-(b.at||0)})},
     letters:function(l,r){var m={};(r||[]).concat(l||[]).forEach(function(x){var o=m[x.k];m[x.k]=o?Object.assign({},x,{read:o.read||x.read}):x});return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.k<b.k?1:-1}).slice(0,12)},
     hlog:function(l,r){return Object.assign({},r,l)},firsts:function(l,r){return Object.assign({},r,l)},fbSeen:function(l,r){return Object.assign({},r,l)},
     drawer:function(l,r){var m={};(r||[]).concat(l||[]).forEach(function(x){var o=m[x.id];m[x.id]=o?Object.assign({},x,{seen:o.seen||x.seen}):x});return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return b.t-a.t}).slice(0,200)},

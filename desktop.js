@@ -1,6 +1,6 @@
 /* Rosy·Claude 电脑版专属：只在电脑浏览器（窗口够宽 + 用鼠标）时加载，手机不会下载这个文件
    1. 电脑版排版：底栏变成浮在底部中间的扁平长条，内容居中，Home 分两栏
-   2. 拖进来就行：图片拖进窗口 → 发到聊天；电子书（epub / txt / pdf）拖进窗口 → 放上书架
+   2. 拖进来就行：图片拖进窗口 → 发到聊天；.md 文件 → 资料库；电子书（epub / txt / pdf）拖进窗口 → 放上书架
    3. 比分小窗：左下角一颗很小的比分条；点「⧉」弹出一个置顶小窗，打游戏时也能看到
    4. 雾中卷宗：在聊天里只发 🥱😶‍🌫️ 开始听真实案件的睡前故事，只发 😶‍🌫️😶‍🌫️ 结束（基于 DardoMoon/mist-dossier，MIT） */
 (function () {
@@ -19,6 +19,8 @@
   .hcols{display:grid;grid-template-columns:1.05fr 1fr;gap:0 32px;align-items:start}
   .hcols>div>.lbl:first-child{margin-top:6px}
   @media (max-width:999px){.hcols{display:block}}
+  #fPlayers{grid-template-columns:repeat(5,1fr)}
+  #fPlayers .fp{font-size:13.5px}
   #vChat .msgs{padding-left:max(24px,calc((100% - 820px)/2));padding-right:max(24px,calc((100% - 820px)/2))}
   #vChat .dock{padding-bottom:84px}
   #vChat .compose{max-width:820px;margin-left:auto;margin-right:auto}
@@ -64,7 +66,7 @@
   /* ---------- 2. 拖进来就行 ---------- */
   var dz = document.createElement('div');
   dz.className = 'dropzone'; dz.hidden = true;
-  dz.innerHTML = '🦉 松手就行<small>图片 → 发到聊天　·　电子书（epub / txt / pdf）→ 放上书架</small>';
+  dz.innerHTML = '🦉 松手就行<small>图片 → 发到聊天　·　.md 文件 → 资料库　·　电子书（epub / txt / pdf）→ 放上书架</small>';
   document.body.appendChild(dz);
   var depth = 0;
   function hasFiles(e) { return e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
@@ -75,8 +77,10 @@
     if (!hasFiles(e)) return; e.preventDefault(); depth = 0; dz.hidden = true;
     var fs = [].slice.call(e.dataTransfer.files || []);
     var imgs = fs.filter(function (f) { return /^image\//.test(f.type); });
+    var mds = fs.filter(function (f) { return /\.(md|markdown)$/i.test(f.name); });
     var books = fs.filter(function (f) { return /\.(epub|txt|pdf)$/i.test(f.name) || /epub|pdf|text\/plain/.test(f.type); });
-    if (imgs.length) { R.go('chat'); R.addImages(imgs).then(function () { R.toast('🖼️ 加了 ' + Math.min(imgs.length, 4) + ' 张图，写句话就能发', 2200); }); }
+    if (mds.length && R.addFiles) { R.go('chat'); R.addFiles(mds); }
+    else if (imgs.length) { R.go('chat'); R.addImages(imgs).then(function () { R.toast('🖼️ 加了 ' + Math.min(imgs.length, 4) + ' 张图，写句话就能发', 2200); }); }
     else if (books.length) { R.go('book'); R.importBook(books[0]); if (books.length > 1) R.toast('一次放一本，先放了《' + books[0].name.replace(/\.[^.]+$/, '') + '》', 2600); }
     else R.toast('这个文件我认不出来，图片或者 epub / txt / pdf 才行', 2600);
   });
