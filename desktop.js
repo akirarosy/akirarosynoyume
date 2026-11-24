@@ -66,7 +66,7 @@
   /* ---------- 2. 拖进来就行 ---------- */
   var dz = document.createElement('div');
   dz.className = 'dropzone'; dz.hidden = true;
-  dz.innerHTML = '🦉 松手就行<small>图片 → 发到聊天　·　.md 文件 → 资料库　·　电子书（epub / txt / pdf）→ 放上书架</small>';
+  dz.innerHTML = '🦉 松手就行<small>图片 → 发到聊天　·　.md → 资料库　·　.skill / .zip → 技能　·　电子书（epub / txt / pdf）→ 放上书架</small>';
   document.body.appendChild(dz);
   var depth = 0;
   function hasFiles(e) { return e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
@@ -77,9 +77,11 @@
     if (!hasFiles(e)) return; e.preventDefault(); depth = 0; dz.hidden = true;
     var fs = [].slice.call(e.dataTransfer.files || []);
     var imgs = fs.filter(function (f) { return /^image\//.test(f.type); });
-    var mds = fs.filter(function (f) { return /\.(md|markdown)$/i.test(f.name); });
+    var sks = fs.filter(function (f) { return /\.(skill|zip)$/i.test(f.name) || /^SKILL\.md$/i.test(f.name); });
+    var mds = fs.filter(function (f) { return /\.(md|markdown)$/i.test(f.name) && !/^SKILL\.md$/i.test(f.name); });
     var books = fs.filter(function (f) { return /\.(epub|txt|pdf)$/i.test(f.name) || /epub|pdf|text\/plain/.test(f.type); });
-    if (mds.length && R.addFiles) { R.go('chat'); R.addFiles(mds); }
+    if (sks.length && R.addSkills) { R.go('chat'); R.addSkills(sks); }
+    else if (mds.length && R.addFiles) { R.go('chat'); R.addFiles(mds); }
     else if (imgs.length) { R.go('chat'); R.addImages(imgs).then(function () { R.toast('🖼️ 加了 ' + Math.min(imgs.length, 4) + ' 张图，写句话就能发', 2200); }); }
     else if (books.length) { R.go('book'); R.importBook(books[0]); if (books.length > 1) R.toast('一次放一本，先放了《' + books[0].name.replace(/\.[^.]+$/, '') + '》', 2600); }
     else R.toast('这个文件我认不出来，图片或者 epub / txt / pdf 才行', 2600);
